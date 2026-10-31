@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     upstream = {
-      url = "github:tpm28/1loop/main";
+      url = "github:Feur-Inc/1loop/main";
       flake = false;
     };
   };

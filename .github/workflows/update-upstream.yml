@@ -51,7 +51,7 @@ jobs:
           commit-message: "chore: update 1loop upstream"
           title: "chore: update 1loop upstream"
           body: |
-            Update the pinned source from tpm28/1loop main.
+            Update the pinned source from Feur-Inc/1loop main.
 
             x86_64 desktop/server builds, update tests, CLI smoke checks and
             evaluation of both supported architectures passed before opening

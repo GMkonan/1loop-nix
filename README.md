@@ -1,6 +1,6 @@
 # 1loop for Nix
 
-Independent, source-based Nix packaging for [tpm28/1loop](https://github.com/tpm28/1loop).
+Independent, source-based Nix packaging for [Feur-Inc/1loop](https://github.com/Feur-Inc/1loop).
 It does not require upstream to accept a flake or maintain a fork of the app.
 Only the packaging and two compatibility patches live here; the application is
 fetched directly from upstream at the revision pinned in `flake.lock`.
@@ -82,7 +82,7 @@ home.packages = [ pkgs."1loop" ];
 
 ## Following upstream
 
-The upstream input tracks `tpm28/1loop`'s `main` branch, but **builds use the
+The upstream input tracks `Feur-Inc/1loop`'s `main` branch, but **builds use the
 locked revision**, not a moving network source. Updates are explicit:
 
 ```sh
