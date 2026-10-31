@@ -25,11 +25,11 @@
     "upstream": {
       "flake": false,
       "locked": {
-        "lastModified": 1792703466,
-        "narHash": "sha256-QtyX8g2L85FhLsuf4H3MLNoc36QA/Sj3EUCy1NBEHJQ=",
+        "lastModified": 1793023862,
+        "narHash": "sha256-w1G954CSLqQ2L4J/6djXTl8FJUjVdyU268N8TNQbP78=",
         "owner": "Feur-Inc",
         "repo": "1loop",
-        "rev": "de58cb4a26769f7f52cdfea9abc31fefb1de01db",
+        "rev": "bbbe102bca2c33c7516aa4f2112b432f30523e56",
         "type": "github"
       },
       "original": {
