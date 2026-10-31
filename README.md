@@ -128,9 +128,10 @@ Included workflows provide:
 - **Nix checks:** formatting, evaluation of both architectures, x86_64 package
   builds/updater tests and CLI help checks on pushes and pull requests.
 - **Update upstream:** daily (07:23 UTC) and manual checks of upstream `main`,
-  followed by builds/tests and a lock-update PR. It explicitly dispatches
-  **Nix checks** on the update branch and enables squash auto-merge for that
-  exact PR head. The protected `main` branch requires the `check` job to pass
+  followed by builds/tests and a lock-update PR. It starts the native
+  **Nix checks** PR workflow (approving only its own tested update when GitHub
+  requires approval) and enables squash auto-merge for that exact PR head.
+  The protected `main` branch requires the `check` job to pass
   against the current base before merging. No personal access token is needed.
   Only `flake.lock` is proposed by this automation; `nixpkgs` is unchanged.
   If patches or dependency hashes break, the workflow fails before proposing

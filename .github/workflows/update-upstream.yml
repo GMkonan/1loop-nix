@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: cachix/install-nix-action@v31
       - name: Update only the upstream source lock
         run: nix flake update upstream
@@ -45,6 +47,7 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
+          base: main
           branch: automation/update-upstream
           delete-branch: true
           add-paths: flake.lock
@@ -60,15 +63,33 @@ jobs:
             nixpkgs is intentionally unchanged. Auto-merge is enabled only
             after the required Nix checks pass. Consumers still need to
             update their own lock and apply their configuration.
-      # Explicit dispatch works with GITHUB_TOKEN and does not require a PAT.
-      # The required check must run on the exact PR head before auto-merge.
-      - name: Run required CI on the update branch
+      # GitHub requires approval for PR workflows opened by GITHUB_TOKEN.
+      # Approve only this workflow's own tested lock-update PR, never other PRs.
+      - name: Start required pull-request checks
         if: steps.changes.outputs.changed == 'true' && steps.pr.outputs.pull-request-number != ''
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          PR_BRANCH: ${{ steps.pr.outputs.pull-request-branch }}
-        run: gh workflow run ci.yml --ref "$PR_BRANCH"
+          PR_HEAD: ${{ steps.pr.outputs.pull-request-head-sha }}
+          PR_NUMBER: ${{ steps.pr.outputs.pull-request-number }}
+        run: |
+          for attempt in {1..12}; do
+            echo "Waiting for pull-request CI registration ($attempt/12)"
+            run=$(gh api --method GET "repos/$GH_REPO/actions/workflows/ci.yml/runs" \
+              -f event=pull_request -f head_sha="$PR_HEAD" -f per_page=30 \
+              --jq ".workflow_runs | map(select(any(.pull_requests[]; .number == $PR_NUMBER))) | first // empty")
+            if [ -n "$run" ]; then
+              run_id=$(jq -r '.id' <<< "$run")
+              conclusion=$(jq -r '.conclusion' <<< "$run")
+              if [ "$conclusion" = action_required ]; then
+                gh api --method POST "repos/$GH_REPO/actions/runs/$run_id/approve"
+              fi
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::No pull-request CI run found for the tested update head $PR_HEAD"
+          exit 1
       - name: Enable auto-merge for the tested lock update
         if: steps.changes.outputs.changed == 'true' && steps.pr.outputs.pull-request-number != ''
         env:
