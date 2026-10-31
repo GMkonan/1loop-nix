@@ -36,7 +36,7 @@ in
   '';
 
   meta = {
-    homepage = "https://github.com/tpm28/1loop";
+    homepage = "https://github.com/Feur-Inc/1loop";
     platforms = lib.platforms.linux;
     # Upstream does not currently declare a license for its own source code.
     # Do not infer one from the vendored dependencies' licenses.
