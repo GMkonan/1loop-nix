@@ -66,6 +66,7 @@ jobs:
       # GitHub requires approval for PR workflows opened by GITHUB_TOKEN.
       # Approve only this workflow's own tested lock-update PR, never other PRs.
       - name: Start required pull-request checks
+        id: ci
         if: steps.changes.outputs.changed == 'true' && steps.pr.outputs.pull-request-number != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,12 +85,20 @@ jobs:
               if [ "$conclusion" = action_required ]; then
                 gh api --method POST "repos/$GH_REPO/actions/runs/$run_id/approve"
               fi
+              echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             sleep 5
           done
           echo "::error::No pull-request CI run found for the tested update head $PR_HEAD"
           exit 1
+      - name: Wait for required pull-request checks
+        if: steps.changes.outputs.changed == 'true' && steps.pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CI_RUN_ID: ${{ steps.ci.outputs.run-id }}
+        run: gh run watch "$CI_RUN_ID" --exit-status --interval 30
       - name: Enable auto-merge for the tested lock update
         if: steps.changes.outputs.changed == 'true' && steps.pr.outputs.pull-request-number != ''
         env:
