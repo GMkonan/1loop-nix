@@ -130,7 +130,9 @@ Included workflows provide:
 - **Update upstream:** daily (07:23 UTC) and manual checks of upstream `main`,
   followed by builds/tests and a lock-update PR. It starts the native
   **Nix checks** PR workflow (approving only its own tested update when GitHub
-  requires approval) and enables squash auto-merge for that exact PR head.
+  requires approval), waits for it to succeed, then requests squash auto-merge
+  for that exact PR head. When all requirements are already satisfied, GitHub
+  merges immediately; otherwise branch protection keeps the PR pending.
   The protected `main` branch requires the `check` job to pass
   against the current base before merging. No personal access token is needed.
   Only `flake.lock` is proposed by this automation; `nixpkgs` is unchanged.
