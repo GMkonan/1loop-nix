@@ -1,0 +1,106 @@
+diff --git a/internal/ui/launcher.go b/internal/ui/launcher.go
+index ed02dc3..dcf8b03 100644
+--- a/internal/ui/launcher.go
++++ b/internal/ui/launcher.go
+@@ -14,6 +14,7 @@ import (
+ 	"strings"
+ 
+ 	"1loop/assets"
++	"1loop/internal/update"
+ )
+ 
+ // appID is the window's application id (Wayland) and class (X11). The
+@@ -27,7 +28,9 @@ const appID = "1loop"
+ // The entry points at this binary, so it is rewritten only when the binary
+ // has moved; it also puts 1loop in the applications menu.
+ func installLauncher() {
+-	if runtime.GOOS != "linux" {
++	// Packaged desktop entries must point at the package's runtime wrapper,
++	// not at os.Executable(), which may be an unwrapped binary in libexec.
++	if runtime.GOOS != "linux" || update.ManagedBy != "" {
+ 		return
+ 	}
+ 	exe, err := os.Executable()
+diff --git a/internal/update/install.go b/internal/update/install.go
+index f67a076..589bebf 100644
+--- a/internal/update/install.go
++++ b/internal/update/install.go
+@@ -53,6 +53,9 @@ func installDir(exe string) string {
+ // replaces the running one. It returns the binary to restart: the new
+ // version, at the running one's path.
+ func Install(ctx context.Context, manifest Manifest, kind string) (string, error) {
++	if ManagedBy != "" {
++		return "", fmt.Errorf("%s", managedProblem())
++	}
+ 	file, ok := manifest.Files[Platform(kind)]
+ 	if !ok {
+ 		return "", fmt.Errorf("No download for %s in this release", Platform(kind))
+diff --git a/internal/update/managed_test.go b/internal/update/managed_test.go
+new file mode 100644
+index 0000000..b46663f
+--- /dev/null
++++ b/internal/update/managed_test.go
+@@ -0,0 +1,32 @@
++package update
++
++import (
++	"context"
++	"strings"
++	"testing"
++)
++
++func TestManagedInstallation(t *testing.T) {
++	previous := ManagedBy
++	ManagedBy = "Nix"
++	t.Cleanup(func() { ManagedBy = previous })
++
++	// A managed build must not fetch a manifest, even on an explicit check.
++	ctx, cancel := context.WithCancel(context.Background())
++	cancel()
++	status, manifest := Check(ctx, "desktop")
++	if status.Current != Version || status.Available || status.CanUpdate {
++		t.Fatalf("unexpected managed status: %+v", status)
++	}
++	if status.Problem != managedProblem() || manifest.Version != "" {
++		t.Fatalf("expected package-manager guidance without fetching: %+v", status)
++	}
++
++	// Reject direct callers (including the server API) before downloading or
++	// touching the installation, not only by hiding the UI's update button.
++	for _, kind := range []string{"desktop", "server"} {
++		if _, err := Install(ctx, Manifest{}, kind); err == nil || !strings.Contains(err.Error(), "managed by Nix") {
++			t.Fatalf("Install(%s) must refuse a managed update: %v", kind, err)
++		}
++	}
++}
+diff --git a/internal/update/update.go b/internal/update/update.go
+index 4402820..1310a71 100644
+--- a/internal/update/update.go
++++ b/internal/update/update.go
+@@ -28,6 +28,15 @@ import (
+ // update themselves.
+ var Version = "dev"
+ 
++// ManagedBy names an external package manager, set by distribution builds
++// (-ldflags "-X 1loop/internal/update.ManagedBy=Nix"). These builds ship their
++// own desktop entry and must not download or replace themselves.
++var ManagedBy = ""
++
++func managedProblem() string {
++	return "This installation is managed by " + ManagedBy + ". Update it through " + ManagedBy + " instead."
++}
++
+ // ManifestURL is the release page's manifest. ONELOOP_UPDATE_URL replaces
+ // it, to test a release before publishing it.
+ const ManifestURL = "https://tpm28.github.io/1loop/updates/latest.json"
+@@ -168,6 +177,10 @@ type Status struct {
+ // Check compares the latest release with this build, for a platform kind.
+ func Check(ctx context.Context, kind string) (Status, Manifest) {
+ 	status := Status{Current: Version}
++	if ManagedBy != "" {
++		status.Problem = managedProblem()
++		return status, Manifest{}
++	}
+ 	manifest, err := Fetch(ctx)
+ 	if err != nil {
+ 		status.Problem = err.Error()

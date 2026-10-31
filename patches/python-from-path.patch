@@ -1,0 +1,12 @@
+diff --git a/internal/computeruse/native_unix.go b/internal/computeruse/native_unix.go
+index 968f409..da0a845 100644
+--- a/internal/computeruse/native_unix.go
++++ b/internal/computeruse/native_unix.go
+@@ -9,6 +9,6 @@ import (
+ )
+ 
+ func startNativeComputer(ctx context.Context) (*computerProcess, error) {
+-	return startComputerProcess(ctx, "/usr/bin/python3", "-u", "-c", assets.ComputerUsePortal)
++	return startComputerProcess(ctx, "python3", "-u", "-c", assets.ComputerUsePortal)
+ }
+ func ComputerGuideText() string { return computerGuide }
