@@ -2,7 +2,7 @@
 
 Independent, source-based Nix packaging for [Feur-Inc/1loop](https://github.com/Feur-Inc/1loop).
 It does not require upstream to accept a flake or maintain a fork of the app.
-Only the packaging and two compatibility patches live here; the application is
+Only the packaging and a compatibility patch live here; the application is
 fetched directly from upstream at the revision pinned in `flake.lock`.
 
 ## Outputs
@@ -82,7 +82,7 @@ home.packages = [ pkgs."1loop" ];
 
 ## Following upstream
 
-The upstream input tracks `Feur-Inc/1loop`'s `main` branch, but **builds use the
+The upstream input tracks `Feur-Inc/1loop`'s `dev` branch, but **builds use the
 locked revision**, not a moving network source. Updates are explicit:
 
 ```sh
@@ -106,7 +106,7 @@ to `lib.fakeHash` first if you need to force recalculation.
 If a compatibility patch no longer applies, review the upstream change and
 refresh or remove the patch; do not silently ignore failed patches. The source
 filter in `nix/common.nix` must also be updated if upstream moves/adds required
-source directories. It intentionally retains upstream's local Fyne fork.
+source directories. It intentionally retains upstream's local Fyne/GLFW forks.
 
 Once changes to this repository are published, consuming configurations must
 update their own lock too:
@@ -127,7 +127,7 @@ Included workflows provide:
 
 - **Nix checks:** formatting, evaluation of both architectures, x86_64 package
   builds/updater tests and CLI help checks on pushes and pull requests.
-- **Update upstream:** daily (07:23 UTC) and manual checks of upstream `main`,
+- **Update upstream:** daily (07:23 UTC) and manual checks of upstream `dev`,
   followed by builds/tests and a lock-update PR. It starts the native
   **Nix checks** PR workflow (approving only its own tested update when GitHub
   requires approval), waits for it to succeed, then requests squash auto-merge
@@ -161,7 +161,8 @@ update their `oneloop` input and apply their NixOS/Home Manager configuration.
 ## Runtime details
 
 - The desktop wrapper supplies Bash, Git, Python with D-Bus/PyGObject/Pillow,
-  GL/Wayland libraries and GTK/GStreamer/PipeWire plugin discovery.
+  GL/Wayland libraries and GTK/GStreamer/PipeWire plugin discovery. It selects
+  the packaged Python via `ONELOOP_COMPUTER_PYTHON`, unless already set.
 - Browser features require Chrome/Chromium accessible to the app. Math
   rendering can additionally need LaTeX and `dvipng`; these are not bundled.
 - Computer Use requires host PipeWire services, a working desktop portal
@@ -178,18 +179,27 @@ update their `oneloop` input and apply their NixOS/Home Manager configuration.
 
 ## Validation and licensing
 
-Locally verified on x86_64 NixOS: both package builds and updater tests,
-`nix flake check`, CLI help, the development shell, Home Manager evaluation,
-and isolated X11/native Wayland startup with the expected backend executables.
-Python imports and GStreamer/PipeWire plugin discovery passed in each app's
-wrapper environment, and the app did not generate a duplicate user launcher.
-The GitHub workflow definitions also passed actionlint locally.
+For the locked `dev` revision `3956479677806193557d0f8b16b49ee86de30e1d`
+(version 0.3.2), these checks passed locally on x86_64-linux:
 
-This standalone package is built from unmodified upstream source plus the
-included patches, rather than relying on a modified local app checkout.
+```sh
+nix fmt -- --check flake.nix nix/*.nix
+nix flake check --no-build --all-systems
+nix flake check -L --cores 2 --max-jobs 1
+nix run . -- -help
+nix run .#1loop-server -- -help
+```
+
+This built the X11/native Wayland desktop executables and headless server,
+ran updater tests in both packages, and exercised both packaged CLI help
+commands (exit status 0). AArch64 outputs were evaluated only. The development
+shell, Home Manager integration, graphical startup, Python imports, plugin
+discovery and workflow linting were not rechecked for this revision.
+
+This standalone package is built from upstream source plus the included
+compatibility patch, rather than relying on a modified local app checkout.
 Actual model-provider requests and desktop-control consent/capture were not
 tested; the included GitHub CI does not exercise graphical startup.
 
-Upstream currently does not declare a license for its own source. Package
-metadata intentionally does not infer a license from its vendored dependencies.
+Upstream declares the Mozilla Public License 2.0 for its own source.
 This repository is independent packaging, not an upstream-endorsed release.

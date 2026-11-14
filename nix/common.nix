@@ -9,23 +9,20 @@ in
     "VERSION"
     "(cmd|internal|assets)(/.*)?"
     "third_party"
-    "third_party/fyne(/.*)?"
+    "third_party/(fyne|glfw|glfw-js)(/.*)?"
   ];
 
-  patches = [
-    ../patches/python-from-path.patch
-    ../patches/managed-installation.patch
-  ];
+  patches = [ ../patches/managed-installation.patch ];
 
-  # Keep the upstream Fyne fork in src; the module proxy contains external modules.
+  # Keep upstream's local forks in src; the module proxy contains external modules.
   proxyVendor = true;
-  vendorHash = "sha256-BfTReOzgAlNWHHltADaTc/aY1zr6gn8O+KbmJVEzoi0=";
+  vendorHash = "sha256-0kWBfl9XQKw7WAP43B86slwovV+aCcZ1kvSvXH7LruU=";
 
   ldflags = [
     "-s"
     "-w"
     "-X 1loop/internal/update.Version=${version}"
-    "-X 1loop/internal/update.ManagedBy=Nix"
+    "-X 1loop/internal/update.Packaged=Nix"
   ];
 
   # Update/signature/archive tests need neither a display nor external network.
@@ -38,7 +35,6 @@ in
   meta = {
     homepage = "https://github.com/Feur-Inc/1loop";
     platforms = lib.platforms.linux;
-    # Upstream does not currently declare a license for its own source code.
-    # Do not infer one from the vendored dependencies' licenses.
+    license = lib.licenses.mpl20;
   };
 }

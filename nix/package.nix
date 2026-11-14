@@ -102,6 +102,7 @@ buildGoModule (
     preFixup = ''
       for name in 1loop 1loop-wayland; do
         makeWrapper "$out/libexec/1loop/$name" "$out/bin/$name" \
+          --set-default ONELOOP_COMPUTER_PYTHON ${python}/bin/python3 \
           --prefix PATH : ${
             lib.makeBinPath [
               python
